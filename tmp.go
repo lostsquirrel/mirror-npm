@@ -30,7 +30,7 @@ func main() {
 			log.Println(err)
 			return
 		}
-		fmt.Printf("get %s %d", key, resp.StatusCode)
+		fmt.Printf("get %s %d\n", key, resp.StatusCode)
 		//}()
 	}
 	//wg.Wait()

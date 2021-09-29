@@ -21,6 +21,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(path, "/") {
 		path = path[1:]
 	}
+	if strings.HasSuffix(path, "/") {
+		path = path[:len(path) - 1]
+	}
 	var realPath string
 	var isMeta bool
 
