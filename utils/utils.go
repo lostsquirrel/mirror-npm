@@ -70,7 +70,7 @@ func LocalBaseUrl() string {
 
 func ReplaceBasePath(metaId string, origin string) string {
 	originPackageUrl := fmt.Sprintf("%s/%s/-/%s", BaseUrl(), metaId, metaId)
-	localPackageUrl := fmt.Sprintf("%s/%s/-/%s", LocalBaseUrl(), metaId, metaId)
+	localPackageUrl := fmt.Sprintf("%s/_pkg/%s/-/%s", LocalBaseUrl(), metaId, metaId)
 	return strings.Replace(origin, originPackageUrl, localPackageUrl, -1)
 }
 
