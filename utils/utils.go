@@ -136,6 +136,9 @@ func GetMetaContentWithEtag(metaId string, withEtag bool) (string, string, error
 	metaUrl := fmt.Sprintf("%s/%s", BaseUrl(), metaId)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", metaUrl, nil)
+	if err != nil {
+		return "", "", err
+	}
 	if withEtag {
 		etag, err := ReadEtagFromFile(GetEtagFileName(metaId))
 		if err != nil {

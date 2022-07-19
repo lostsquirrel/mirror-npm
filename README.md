@@ -4,6 +4,10 @@ download npm package to local disk and server by nginx
 
 ## Versions
 
+
+- 2.2.0
+  - add meta delete
+  
 - 2.1.0
   - forward post requests
 

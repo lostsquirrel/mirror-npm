@@ -27,7 +27,10 @@ func TestIfNoneMatch(t *testing.T) {
 	// ...
 	etag := `W/"e91d01bc21eec26d15454b7c13eabef3"`
 	req.Header.Add("If-None-Match", etag)
-	resp, _ := client.Do(req)
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	}
 	defer resp.Body.Close()
 
 	buf, _ := ioutil.ReadAll(resp.Body)
@@ -42,4 +45,3 @@ func TestIfNoneMatch(t *testing.T) {
 func TestReloadEtag(t *testing.T) {
 
 }
-

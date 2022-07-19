@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"mirror-npm/utils"
 	"net/http"
@@ -22,11 +20,13 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s url %s", r.Method, path)
 	if r.Method == http.MethodPost {
 		realPath := fmt.Sprintf("%s/%s", utils.BaseUrl(), path)
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		// body, err := ioutil.ReadAll(r.Body)
+
+		// if err != nil {
+		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+		// log.Println("req", string(body))
 
 		// you can reassign the body if you need to parse it as multipart
 		// r.Body = ioutil.NopCloser(bytes.NewReader(body))
@@ -34,17 +34,17 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		// create a new url from the raw RequestURI sent by the client
 		// url := fmt.Sprintf("%s://%s%s", proxyScheme, proxyHost, req.RequestURI)
 
-		proxyReq, err := http.NewRequest(r.Method, realPath, bytes.NewReader(body))
+		proxyReq, err := http.NewRequest(r.Method, realPath, r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadGateway)
 			return
 		}
 		// We may want to filter some headers, otherwise we could just use a shallow copy
 		// proxyReq.Header = req.Header
-		proxyReq.Header = make(http.Header)
-		for h, val := range r.Header {
-			proxyReq.Header[h] = val
-		}
+		// proxyReq.Header = make(http.Header)
+		// for h, val := range r.Header {
+		// 	proxyReq.Header[h] = val
+		// }
 		httpClient := &http.Client{}
 		resp, err := httpClient.Do(proxyReq)
 		if err != nil {
@@ -52,12 +52,24 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer resp.Body.Close()
-		buf, err := ioutil.ReadAll(resp.Body)
+		// buf, err := ioutil.ReadAll(resp.Body)
+		// log.Println("resp", string(buf))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.Write(buf)
+		w.WriteHeader(resp.StatusCode)
+		io.Copy(w, resp.Body)
+		return
+	}
+	if r.Method == http.MethodDelete {
+		realPath := fmt.Sprintf("%s%s", utils.MetaBasePath(), path)
+		err := os.Remove(realPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 	path = strings.TrimPrefix(path, "/")

@@ -82,7 +82,7 @@ func BuildEtagFilePath(metaId string) string {
 	return fmt.Sprintf("%s/%s", EtagBasePath(), GetEtagFileName(metaId))
 }
 
-func checkUpdate(metaId string) (bool, error) {
+func CheckUpdate(metaId string) (bool, error) {
 	metaUrl := BuildMetaUrl(metaId)
 	resp, err := http.Head(metaUrl)
 	defer func() {
