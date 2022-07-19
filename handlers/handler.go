@@ -63,7 +63,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == http.MethodDelete {
-		realPath := fmt.Sprintf("%s%s", utils.MetaBasePath(), path)
+		realPath := fmt.Sprintf("%s%s", utils.MetaBasePath(), strings.TrimPrefix(path, "/_operation"))
 		err := os.Remove(realPath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
