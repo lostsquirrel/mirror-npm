@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
-	"net/http"
+	"mirror-npm/utils"
+	"testing"
 )
 
-func main() {
+func TestInit(t *testing.T) {
 	buf, err := ioutil.ReadFile("/tmp/etag")
 	if err != nil {
 		return
@@ -21,16 +21,16 @@ func main() {
 	//runtime.NumGoroutine()
 	//wg := sync.WaitGroup{}
 	//wg.Add(len(data))
-	for key, _ := range data {
+	for key := range data {
 		//go func() {
 		//	defer wg.Done()
-		url := fmt.Sprintf("http://npm.sunrise.lan/%s", key)
-		resp, err := http.Get(url)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		fmt.Printf("get %s %d\n", key, resp.StatusCode)
+		//url := fmt.Sprintf("http://npm.sunrise.lan/%s", key)
+		//resp, err := http.Get(url)
+		//if err != nil {
+		//	log.Println(err)
+		//	return
+		//}
+		fmt.Printf("touch %s\n", utils.GetEtagFileName(key))
 		//}()
 	}
 	//wg.Wait()

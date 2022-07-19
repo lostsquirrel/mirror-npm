@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"mirror-npm/utils"
 	"net/http"
@@ -17,13 +19,57 @@ const withEtag = false
 func Handler(w http.ResponseWriter, r *http.Request) {
 	// omit the prefix splash
 	path := r.URL.Path
-	log.Printf("request url %s", path)
-	if strings.HasPrefix(path, "/") {
-		path = path[1:]
+	log.Printf("%s url %s", r.Method, path)
+	if r.Method == http.MethodPost {
+		realPath := fmt.Sprintf("%s/%s", utils.BaseUrl(), path)
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// you can reassign the body if you need to parse it as multipart
+		// r.Body = ioutil.NopCloser(bytes.NewReader(body))
+
+		// create a new url from the raw RequestURI sent by the client
+		// url := fmt.Sprintf("%s://%s%s", proxyScheme, proxyHost, req.RequestURI)
+
+		proxyReq, err := http.NewRequest(r.Method, realPath, bytes.NewReader(body))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		// We may want to filter some headers, otherwise we could just use a shallow copy
+		// proxyReq.Header = req.Header
+		proxyReq.Header = make(http.Header)
+		for h, val := range r.Header {
+			proxyReq.Header[h] = val
+		}
+		httpClient := &http.Client{}
+		resp, err := httpClient.Do(proxyReq)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		defer resp.Body.Close()
+		buf, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Write(buf)
+		return
 	}
-	if strings.HasSuffix(path, "/") {
-		path = path[:len(path) - 1]
+	path = strings.TrimPrefix(path, "/")
+
+	if len(path) == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		log.Println("return for null")
+		return
 	}
+
+	path = strings.TrimSuffix(path, "/")
+
 	var realPath string
 	var isMeta bool
 

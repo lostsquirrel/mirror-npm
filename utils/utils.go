@@ -69,8 +69,21 @@ func LocalBaseUrl() string {
 }
 
 func ReplaceBasePath(metaId string, origin string) string {
-	originPackageUrl := fmt.Sprintf("%s/%s/-/%s", BaseUrl(), metaId, metaId)
-	localPackageUrl := fmt.Sprintf("%s/_pkg/%s/-/%s", LocalBaseUrl(), metaId, metaId)
+	var (
+		originPackageUrl string
+		localPackageUrl  string
+	)
+	if strings.HasPrefix(metaId, "@") {
+		metaParts := strings.Split(metaId, "/")
+		metaGroup := metaParts[0]
+		metaIdEx := metaParts[1]
+		originPackageUrl = fmt.Sprintf("%s/%s/%s/-/%s", BaseUrl(), metaGroup, metaIdEx, metaIdEx)
+		localPackageUrl = fmt.Sprintf("%s/_pkg/%s/%s/-/%s", LocalBaseUrl(), metaGroup, metaIdEx, metaIdEx)
+	} else {
+		originPackageUrl = fmt.Sprintf("%s/%s/-/%s", BaseUrl(), metaId, metaId)
+		localPackageUrl = fmt.Sprintf("%s/_pkg/%s/-/%s", LocalBaseUrl(), metaId, metaId)
+	}
+
 	return strings.Replace(origin, originPackageUrl, localPackageUrl, -1)
 }
 
@@ -152,4 +165,3 @@ func GetMetaContentWithEtag(metaId string, withEtag bool) (string, string, error
 	}
 	return content, etag, nil
 }
-
