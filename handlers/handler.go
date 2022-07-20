@@ -44,7 +44,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		// proxyReq.Header = req.Header
 		proxyReq.Header = make(http.Header)
 		for h, val := range r.Header {
-			log.Println(h, val)
+			// log.Println(h, val)
 			proxyReq.Header[h] = val
 		}
 		httpClient := &http.Client{}
