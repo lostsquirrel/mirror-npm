@@ -26,7 +26,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
 		// 	return
 		// }
-		// log.Println("req", string(body))
+		// fmt.Printf("%x", body)
+		// log.Println("request body", string(body))
 
 		// you can reassign the body if you need to parse it as multipart
 		// r.Body = ioutil.NopCloser(bytes.NewReader(body))
@@ -41,10 +42,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		}
 		// We may want to filter some headers, otherwise we could just use a shallow copy
 		// proxyReq.Header = req.Header
-		// proxyReq.Header = make(http.Header)
-		// for h, val := range r.Header {
-		// 	proxyReq.Header[h] = val
-		// }
+		proxyReq.Header = make(http.Header)
+		for h, val := range r.Header {
+			log.Println(h, val)
+			proxyReq.Header[h] = val
+		}
 		httpClient := &http.Client{}
 		resp, err := httpClient.Do(proxyReq)
 		if err != nil {
@@ -57,6 +59,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		}
+		for h, val := range resp.Header {
+			for _, v := range val {
+				w.Header().Add(h, v)
+			}
 		}
 		w.WriteHeader(resp.StatusCode)
 		io.Copy(w, resp.Body)
