@@ -4,11 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 )
 
 const pkgPath = "PACKAGE_BASE_PATH"
@@ -117,8 +118,9 @@ func CloseFile(file *os.File) {
 	}
 }
 
-func CreateFileParent(filepath string) error {
-	parent := filepath[:strings.LastIndex(filepath, "/")]
+func CreateFileParent(file string) error {
+
+	parent := filepath.Dir(file)
 	return CreateDirIfNotExist(parent)
 
 }
@@ -132,39 +134,67 @@ func CreateDirIfNotExist(parent string) error {
 	return nil
 }
 
-func GetMetaContentWithEtag(metaId string, withEtag bool) (string, string, error) {
+func GetMetaContent(metaId string, c *http.Client) (string, error) {
 	metaUrl := fmt.Sprintf("%s/%s", BaseUrl(), metaId)
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", metaUrl, nil)
-	if err != nil {
-		return "", "", err
-	}
-	if withEtag {
-		etag, err := ReadEtagFromFile(GetEtagFileName(metaId))
+	metaFilePath := buildMetaFilePath(metaId)
+	var modTime time.Time
+	if info, err := os.Stat(metaFilePath); err == nil {
+		modTime = info.ModTime()
+		fmt.Println("📁 Local cache found, mod time:", modTime)
+		resp, err := c.Head(metaUrl)
 		if err != nil {
-			log.Printf("cannot read etag %s", err)
-		} else {
-			req.Header.Add("If-None-Match", etag)
+			log.Println("send head request failed")
+			return "", err
 		}
+		if lm := resp.Header.Get("Last-Modified"); lm != "" {
+			if t, err := time.Parse(http.TimeFormat, lm); err == nil {
+				if t.After(modTime) {
+					return downloadMeta(metaId)
+				}
+			}
+
+		}
+		data, err := os.ReadFile(metaFilePath)
+		if err != nil {
+			log.Println("read meta file failed")
+			return downloadMeta(metaId)
+		}
+		return string(data), nil
+
+	} else {
+		fmt.Println("🆕 No local cache, will fetch full content")
+		return downloadMeta(metaId)
+
 	}
-	resp, err := client.Do(req)
+
+}
+
+func downloadMeta(metaId string) (string, error) {
+	metaUrl := fmt.Sprintf("%s/%s", BaseUrl(), metaId)
+	metaFilePath := buildMetaFilePath(metaId)
+	resp, err := http.Get(metaUrl)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	defer CloseBody(resp.Body)
 	if resp.StatusCode != 200 {
-		return "", "", errors.New(resp.Status)
+		return "", errors.New(resp.Status)
 	}
-	buf, err := ioutil.ReadAll(resp.Body)
+	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	content := string(buf)
-	var etag string
-	newTag, ok := resp.Header[HeaderEtag]
-	if ok {
-		etag = newTag[0]
-		log.Printf("read etag --%s--", etag)
+	replacedContent := ReplaceBasePath(metaId, content)
+
+	log.Printf("write to meta file %s", metaFilePath)
+	if err := WriteStringToFile(replacedContent, metaFilePath); err != nil {
+		log.Printf("write to file %s failed %v", metaFilePath, err)
 	}
-	return content, etag, nil
+	if lm := resp.Header.Get("Last-Modified"); lm != "" {
+		if t, err := time.Parse(http.TimeFormat, lm); err == nil {
+			os.Chtimes(metaFilePath, t, t)
+		}
+	}
+	return replacedContent, nil
 }

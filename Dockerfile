@@ -1,7 +1,6 @@
-FROM registry.lisong.pub:28500/hub/library/golang:1.18-buster AS builder
+FROM registry.lisong.pub:28500/hub/library/golang:1.24 AS builder
 
 ENV GOPROXY=https://goproxy.cn,direct
-ENV CGO_ENABLED=0
 
 ADD . /dist
 WORKDIR /dist

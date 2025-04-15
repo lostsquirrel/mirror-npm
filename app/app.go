@@ -32,13 +32,12 @@ func NewInstance() *Instance {
 	return s
 }
 
-func (s *Instance) Start() { // Startup all dependencies
-
+func (s *Instance) Start() {
 	s.httpServer = &http.Server{Addr: s.config.addr, Handler: s.handler}
 
 	err := s.httpServer.ListenAndServe()
 	if err != http.ErrServerClosed {
-		log.Println("Http Server stopped unexpected")
+		log.Printf("Http Server stopped unexpected: %v", err)
 		s.Shutdown()
 	} else {
 		log.Println("Http Server stopped")
@@ -51,7 +50,7 @@ func (s *Instance) Shutdown() {
 		defer cancel()
 		err := s.httpServer.Shutdown(ctx)
 		if err != nil {
-			log.Println("Failed to shutdown http server gracefully")
+			log.Printf("Failed to shutdown http server gracefully: %v", err)
 		} else {
 			s.httpServer = nil
 		}
